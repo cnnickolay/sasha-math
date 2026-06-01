@@ -3,7 +3,7 @@
 const PROBLEMS = [
   { id: 'twins', title: '28 + 22 = 30 + 22 − x   (the +22 trick)',
     def: { L: [['n', 28], ['n', 22]], R: [['n', 30], ['n', 22], ['x', -1]] },
-    intro: 'Both pans are equal — that is what the = means. See the +22 on BOTH sides? Tap a <b>22</b> to find out the trick.' },
+    intro: 'Both pans weigh the same — that is what the = means. See the <b>22</b> on BOTH sides? Try <b>dragging</b> a 22 down to the 🗑️ tray and watch the scale.' },
   { id: 'p1', title: 'x + 7 = 12',
     def: { L: [['x', 1], ['n', 7]], R: [['n', 12]] },
     intro: 'Get x on its own. Tap the <b>7</b>, then send it across the =.' },
@@ -19,6 +19,27 @@ let state = null;
 let currentDef = null;
 let selId = null;
 let solved = false;
+let SOLUTION = 0;   // the true value of x for this puzzle (used to weigh the pans)
+
+/* ---------- weight model ---------- */
+// Solve the linear equation once so the scale knows what x "really weighs".
+function solveX(def) {
+  let Lc = 0, La = 0, Rc = 0, Ra = 0;
+  def.L.forEach(([k, v]) => k === 'x' ? La += v : Lc += v);
+  def.R.forEach(([k, v]) => k === 'x' ? Ra += v : Rc += v);
+  const denom = La - Ra;
+  return denom === 0 ? 0 : (Rc - Lc) / denom;
+}
+function termValue(t) { return t.isX ? t.c * SOLUTION : t.c; }
+function weightSide(arr, skipId) {
+  return arr.reduce((a, t) => a + (t.id === skipId ? 0 : termValue(t)), 0);
+}
+// signed weight difference (right − left); ~0 whenever the equation holds.
+function weightDiff(skipId, skipSide) {
+  const wL = weightSide(state.L, skipSide === 'L' ? skipId : null);
+  const wR = weightSide(state.R, skipSide === 'R' ? skipId : null);
+  return wR - wL;
+}
 
 /* ---------- DOM ---------- */
 const eqBar    = document.getElementById('equationBar');
@@ -97,7 +118,7 @@ function buildActions() {
 
   const sel = selectedTerm();
   if (!sel) {
-    addHint('👆 Tap a number or the <b>x</b> to choose what to work with.');
+    addHint('👆 Tap a block to pick it — or <b>drag</b> it: to the other pan to send it across, or to the 🗑️ tray to take it off.');
     return;
   }
   const side = sideOf(sel.id);
@@ -203,10 +224,17 @@ function setBadge() {
 }
 function refresh() {
   renderEquationBar();
-  Scale.render(state, selId);
+  Scale.render(state, selId, Scale.angleFor(weightDiff()));
   setBadge();
   if (!solved) checkWin();
   buildActions();
+}
+
+/* dropping a block somewhere it cannot legally go */
+function springBackLesson(term) {
+  say(`🙅 If you take <b>${EQ.body(term)}</b> off only ONE side, the scale tips — that is not fair!`,
+      'To keep it balanced, take the SAME amount off BOTH sides.');
+  refresh();   // the block springs back to its pan and the beam settles level
 }
 
 function selectTerm(id) {
@@ -218,6 +246,7 @@ function selectTerm(id) {
 /* ---------- load a puzzle ---------- */
 function loadProblem(p) {
   currentDef = p.def;
+  SOLUTION = solveX(p.def);
   state = EQ.build(p.def);
   selId = null;
   solved = false;
@@ -225,12 +254,38 @@ function loadProblem(p) {
   coachEl.innerHTML = '';
   say('🧮 ' + p.intro);
   refresh();
+  Scale.wobble();
 }
 
 /* ---------- boot ---------- */
 function boot() {
   Scale.init();
   Scale.onBlockClick = selectTerm;
+
+  // live tilt while a block is being dragged off its pan
+  Scale.onDrag = (id) => {
+    if (solved) return;
+    const side = sideOf(id);
+    Scale.position(Scale.angleFor(weightDiff(id, side)));
+  };
+
+  // where the block was dropped
+  Scale.onDrop = (id, target) => {
+    if (solved) { refresh(); return; }
+    const side = sideOf(id);
+    const term = (state.L.concat(state.R)).find(t => t.id === id);
+    if (!term || !side) { refresh(); return; }
+
+    if (target === EQ.other(side) && state[side].length > 1) {
+      sendAcross(term, side);                 // carried across the =
+    } else if (target === 'remove') {
+      const twin = EQ.twin(state, term, side);
+      if (twin) removeBoth(term, side);       // had a matching twin -> fair
+      else springBackLesson(term);            // one-sided -> tips, springs back
+    } else {
+      refresh();                              // returned to its pan
+    }
+  };
 
   PROBLEMS.forEach((p, i) => {
     const o = document.createElement('option');

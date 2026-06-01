@@ -103,10 +103,24 @@ main { max-width: 760px; margin: 0 auto; padding: 0 16px 40px; }
   width: 190px; height: 16px; background: #d8c089;
   border: 3px solid #b59a5f; border-radius: 0 0 90px 90px;
   box-shadow: inset 0 -4px 6px rgba(0,0,0,.12);
+  transition: box-shadow .15s;
 }
-.pan .strings {
-  position: absolute; bottom: 100%; left: 0; width: 100%; height: 60px;
-  pointer-events: none;
+.pan.over .dish {
+  box-shadow: 0 0 0 4px rgba(46,158,91,.6), inset 0 -4px 6px rgba(0,0,0,.12);
+}
+
+/* ---------- the take-off tray (drop target) ---------- */
+.tray {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 0 auto 12px; max-width: 460px;
+  border: 3px dashed var(--line); border-radius: 16px;
+  padding: 12px 16px; color: #8a7a5a; font-weight: 700; font-size: 16px;
+  background: rgba(255,255,255,.5); transition: all .15s; text-align: center;
+}
+body.dragging .tray { border-color: #e0992a; color: var(--take-d); }
+.tray.over {
+  border-color: #2e9e5b; color: #2e7d32; background: #e6f4e6;
+  transform: scale(1.03);
 }
 .pan .blocks {
   display: flex; flex-direction: column-reverse; align-items: center; gap: 6px;
@@ -114,13 +128,21 @@ main { max-width: 760px; margin: 0 auto; padding: 0 16px 40px; }
 }
 .block {
   min-width: 56px; padding: 10px 14px; border-radius: 12px;
-  color: #fff; font-weight: 800; font-size: 22px; cursor: pointer;
-  text-align: center; line-height: 1; user-select: none;
+  color: #fff; font-weight: 800; font-size: 22px; cursor: grab;
+  text-align: center; line-height: 1; user-select: none; touch-action: none;
   box-shadow: 0 4px 0 rgba(0,0,0,.18);
   transition: transform .1s, outline-color .12s, opacity .3s;
   outline: 3px solid transparent; position: relative;
 }
 .block:active { transform: translateY(2px); }
+.block.drag {
+  position: fixed; z-index: 60; cursor: grabbing; pointer-events: none;
+  transform: scale(1.08) rotate(-3deg);
+  box-shadow: 0 12px 22px rgba(0,0,0,.35);
+}
+/* while dragging, beam + pans track the finger with no lag */
+body.dragging .beam, body.dragging .pan { transition: none !important; }
+body.dragging { cursor: grabbing; }
 .block.num  { background: var(--num);  border-bottom: 4px solid var(--num-d); }
 .block.x    { background: var(--x);    border-bottom: 4px solid var(--x-d); }
 .block.take { background: var(--take); border-bottom: 4px solid var(--take-d); }
