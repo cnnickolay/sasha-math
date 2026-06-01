@@ -156,16 +156,41 @@ body.dragging .beam, body.dragging .pan { transition: none !important; }
 body.dragging { cursor: grabbing; }
 .block.num  { background: var(--num);  border-bottom: 4px solid var(--num-d); }
 .block.x    { background: var(--x);    border-bottom: 4px solid var(--x-d); }
-.block.take { background: var(--take); border-bottom: 4px solid var(--take-d); }
 .block.sel  { outline-color: #ffd23f; box-shadow: 0 0 0 5px rgba(255,210,63,.5), 0 4px 0 rgba(0,0,0,.18); }
-.block .tag {
-  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-  font-size: 10px; background: #fff; color: var(--take-d);
-  padding: 1px 6px; border-radius: 8px; font-weight: 700; white-space: nowrap;
-  border: 1px solid var(--take-d);
+
+/* ---------- balloon (a negative term: pulls the pan UP) ---------- */
+.block.balloon {
+  background: radial-gradient(circle at 32% 28%, #ff8f6b, var(--take) 70%);
+  border: none; border-radius: 50% 50% 50% 50% / 46% 46% 54% 54%;
+  box-shadow: inset -3px -4px 8px rgba(0,0,0,.18), 0 4px 10px rgba(0,0,0,.15);
+  padding: 12px 14px 16px; min-width: 50px;
+  animation: bob 2.4s ease-in-out infinite;
 }
+.block.balloon .bnum { position: relative; z-index: 1; }
+.block.balloon::after {            /* the dangling string */
+  content: ""; position: absolute; top: 100%; left: 50%;
+  width: 2px; height: 16px; margin-left: -1px;
+  background: #b59a5f;
+}
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.block.balloon.fly { animation: floatAway .9s ease-in forwards; }
+@keyframes floatAway { to { transform: translateY(-160px) scale(.7); opacity: 0; } }
+
 .block.fly { animation: fly .6s ease forwards; }
 @keyframes fly { to { transform: translateY(-60px); opacity: 0; } }
+
+/* ---------- supply bin: infinite +weights to cancel balloons ---------- */
+.supply {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center;
+  margin: 0 auto 12px; max-width: 620px; padding: 10px 14px;
+  border: 3px solid #cfe0f3; border-radius: 16px; background: #f2f8ff;
+}
+.supply.hidden { display: none; }
+.supply::before {
+  content: "🪙 weights — drag onto a pan";
+  color: #5a7aa0; font-weight: 700; font-size: 14px; margin-right: 4px;
+}
+.supply .block.supply { cursor: grab; box-shadow: 0 4px 0 var(--num-d); }
 
 /* ---------- actions ---------- */
 .actions {

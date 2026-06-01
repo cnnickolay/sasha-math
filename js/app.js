@@ -13,6 +13,9 @@ const PROBLEMS = [
   { id: 'p3', title: 'x + 4 + 9 = 13 + 4 + 9',
     def: { L: [['x', 1], ['n', 4], ['n', 9]], R: [['n', 13], ['n', 4], ['n', 9]] },
     intro: 'This one has <b>two</b> matching pairs: a 4 on both pans and a 9 on both pans. Take each pair off (both 4s, both 9s) to leave x alone.' },
+  { id: 'neg', title: 'x − 3 = 5   (meet the balloon!)',
+    def: { L: [['x', 1], ['n', -3]], R: [['n', 5]] },
+    intro: 'A <b>−3 is a balloon</b> 🎈 — it pulls the pan UP instead of down (you cannot put negative weight on a scale, but a balloon lifts!). To get rid of it, drag a <b>+3 weight from the bin</b> onto the SAME pan: the weight and the balloon cancel out and float away — that is <b>+3 and −3 = 0</b>. Then add a 3 to the OTHER pan too, to keep it fair!' },
 ];
 
 let state = null;
@@ -239,6 +242,28 @@ function moveToPan(term, from, target) {
   refresh();
 }
 
+// Drop a fresh +val weight onto a pan. If that pan has a matching −val
+// balloon, the two cancel and float away (a "zero pair"). Otherwise the
+// weight simply joins the pan and it gets heavier.
+function dropWeight(val, side) {
+  const balloon = state[side].find(t => !t.isX && t.c === -val);
+  if (balloon) {
+    state[side] = state[side].filter(t => t.id !== balloon.id);   // balloon gone
+    selId = null;
+    const balanced = Math.abs(weightDiff()) < 1e-9;
+    say(`🎈 The <b>+${val}</b> weight and the <b>−${val}</b> balloon cancelled out — <b>+${val} and −${val} make 0</b>! They floated away together.`,
+        balanced
+          ? 'Both pans changed by the same amount, so the scale is level again — fair!'
+          : 'That pan changed — now add a ' + val + ' to the OTHER pan too, to keep it fair.');
+  } else {
+    state[side].push(EQ.term(val, false));   // just an added weight
+    selId = null;
+    say(`➕ Added a <b>${val}</b> weight to the ${side === 'L' ? 'left' : 'right'} pan.`,
+        'That pan got heavier. To stay fair, add the same to the other pan.');
+  }
+  refresh();
+}
+
 function combineNumbers(side) {
   const nums = EQ.numbers(state[side]);
   if (nums.length < 2) return;
@@ -304,11 +329,20 @@ function selectTerm(id) {
 }
 
 /* ---------- load a puzzle ---------- */
+// the weights the supply bin should offer: one for each distinct balloon
+// (negative) value anywhere in the starting puzzle.
+function supplyValues(def) {
+  const vals = new Set();
+  [...def.L, ...def.R].forEach(([k, v]) => { if (k === 'n' && v < 0) vals.add(-v); });
+  return [...vals].sort((a, b) => a - b);
+}
+
 function loadProblem(p) {
   currentDef = p.def;
   SOLUTION = solveX(p.def);
   state = EQ.build(p.def);
   state.desk = [];                 // blocks set aside off the scale: {term,x,y}
+  state.supply = supplyValues(p.def);  // infinite +weights to cancel balloons
   selId = null;
   solved = false;
   winBanner.classList.remove('show');
@@ -339,7 +373,16 @@ function boot() {
     if (!term || !from) { refresh(); return; }
 
     if (target === 'desk') {
-      setAside(term, from, info);             // park it on the shelf
+      // a balloon can't be set aside — the only way to remove it is to cancel
+      // it with its opposite weight. Snap it back and explain.
+      if (term.c < 0) {
+        say('🎈 You cannot just take a balloon off — it floats! To get rid of <b>−' +
+            EQ.body(term) + '</b>, drag a <b>+' + EQ.body(term) +
+            ' weight from the bin</b> onto its pan so they cancel out.');
+        refresh();
+      } else {
+        setAside(term, from, info);           // park it on the shelf
+      }
     } else if (target === 'L' || target === 'R') {
       moveToPan(term, from, target);          // drop onto a pan
     } else {
@@ -348,6 +391,13 @@ function boot() {
       if (from === 'desk' && info) { reparkLoose(term, info); }
       else refresh();
     }
+  };
+
+  // a fresh +weight from the supply bin was dropped on a pan
+  Scale.onDropSupply = (val, target) => {
+    if (solved) { refresh(); return; }
+    if (target === 'L' || target === 'R') dropWeight(val, target);
+    else refresh();
   };
 
   PROBLEMS.forEach((p, i) => {

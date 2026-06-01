@@ -23,7 +23,7 @@ const EQ = {
   label(t) { return (t.c < 0 ? '−' : '') + this.body(t); },
 
   kind(t) {
-    if (t.c < 0) return 'take';
+    if (t.c < 0) return 'balloon';   // negative = a balloon that pulls UP
     return t.isX ? 'x' : 'num';
   },
 

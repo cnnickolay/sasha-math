@@ -3,10 +3,11 @@
    the beam ends. Tilt is driven by the weight difference the app feeds in. */
 
 const Scale = {
-  beam: null, panL: null, panR: null, stage: null, desk: null,
+  beam: null, panL: null, panR: null, stage: null, desk: null, supply: null,
   onBlockClick: null,   // tap a block        -> app
   onDrag: null,         // block being dragged -> app (returns nothing)
   onDrop: null,         // block dropped       -> app (id, target, info)
+  onDropSupply: null,   // supply weight dropped -> app (val, target)
 
   MAX: 12,              // biggest gentle tilt, degrees
   SCALE: 26,            // weight units that map to a strong tilt
@@ -21,6 +22,7 @@ const Scale = {
     this.panR  = document.getElementById('panR');
     this.stage = document.getElementById('stage');
     this.desk  = document.getElementById('desk');
+    this.supply = document.getElementById('supply');
     window.addEventListener('resize', () => this.position(this._lastAngle || 0));
   },
 
@@ -51,12 +53,15 @@ const Scale = {
     const b = document.createElement('div');
     b.className = 'block ' + EQ.kind(term);
     b.dataset.id = term.id;
-    b.textContent = EQ.body(term);
     if (term.c < 0) {
-      const tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.textContent = 'take away';
-      b.appendChild(tag);
+      // a balloon: shows −n, pulls the pan UP
+      b.textContent = '';
+      const num = document.createElement('span');
+      num.className = 'bnum';
+      num.textContent = '−' + EQ.body(term);
+      b.appendChild(num);
+    } else {
+      b.textContent = EQ.body(term);
     }
     b.addEventListener('pointerdown', (e) => this._down(e, term, b));
     b.addEventListener('click', (e) => {
@@ -64,6 +69,24 @@ const Scale = {
       if (this.onBlockClick) this.onBlockClick(term.id);
     });
     return b;
+  },
+
+  /* a draggable supply weight (infinite): dragging it spawns a +val weight. */
+  supplyEl(val) {
+    const b = document.createElement('div');
+    b.className = 'block num supply';
+    b.dataset.supply = val;
+    b.textContent = String(val);
+    b.addEventListener('pointerdown', (e) => this._down(e, { supply: val, c: val }, b));
+    return b;
+  },
+
+  renderSupply(vals) {
+    if (!this.supply) return;
+    this.supply.querySelectorAll('.block').forEach(b => b.remove());
+    const has = vals && vals.length;
+    this.supply.classList.toggle('hidden', !has);
+    if (has) vals.forEach(v => this.supply.appendChild(this.supplyEl(v)));
   },
 
   renderSide(pan, side, selId) {
@@ -101,6 +124,7 @@ const Scale = {
     this.renderSide(this.panL, state.L, selId);
     this.renderSide(this.panR, state.R, selId);
     this.renderDesk(state.desk || [], selId);
+    this.renderSupply(state.supply || []);
     requestAnimationFrame(() => this.position(angle || 0));
   },
 
@@ -114,7 +138,7 @@ const Scale = {
     if (this._drag) return;                            // ignore re-entrant down
     const r = el.getBoundingClientRect();
     this._drag = {
-      id: term.id, src: el, ghost: null,
+      id: term.id, supply: term.supply, src: el, ghost: null,
       pid: e.pointerId,
       sx: e.clientX, sy: e.clientY,        // where the grab started
       gx: e.clientX - r.left,              // grab offset inside the block
@@ -145,12 +169,14 @@ const Scale = {
       g.style.height = d.h + 'px';
       document.body.appendChild(g);
       d.ghost = g;
-      d.src.classList.add('ghosted');      // keeps its slot but invisible
+      // supply weights are infinite — leave the source visible so a fresh one
+      // appears to stay in the bin; real blocks hide their slot while dragging.
+      if (d.supply == null) d.src.classList.add('ghosted');
     }
     d.ghost.style.left = (e.clientX - d.gx) + 'px';
     d.ghost.style.top  = (e.clientY - d.gy) + 'px';
     this._highlight(e.clientX, e.clientY);
-    if (this.onDrag) this.onDrag(d.id);
+    if (this.onDrag && d.supply == null) this.onDrag(d.id);
   },
 
   _up(e) {
@@ -167,6 +193,10 @@ const Scale = {
     this._clearHighlight();
     const cancelled = (e.type === 'pointercancel');
     const target = cancelled ? null : this._target(e.clientX, e.clientY);
+    if (d.supply != null) {                 // a fresh weight from the supply bin
+      if (this.onDropSupply) this.onDropSupply(d.supply, target);
+      return;
+    }
     // drop position relative to the desk box (block top-left), so the app can
     // park it exactly where the finger let go.
     const dr = this.desk.getBoundingClientRect();
