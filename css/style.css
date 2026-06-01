@@ -140,8 +140,15 @@ body.dragging .tray { border-color: #e0992a; color: var(--take-d); }
   transform: scale(1.08) rotate(-3deg);
   box-shadow: 0 12px 22px rgba(0,0,0,.35);
 }
-/* while dragging, beam + pans track the finger with no lag */
-body.dragging .beam, body.dragging .pan { transition: none !important; }
+/* while dragging, the beam still eases — just quicker, so it feels gentle
+   and responsive (not the slow 0.7s settle, not an instant snap) */
+body.dragging .beam {
+  transition: transform .28s cubic-bezier(.22,.61,.36,1) !important;
+}
+body.dragging .pan {
+  transition: top .28s cubic-bezier(.22,.61,.36,1),
+              left .28s cubic-bezier(.22,.61,.36,1) !important;
+}
 body.dragging { cursor: grabbing; }
 .block.num  { background: var(--num);  border-bottom: 4px solid var(--num-d); }
 .block.x    { background: var(--x);    border-bottom: 4px solid var(--x-d); }

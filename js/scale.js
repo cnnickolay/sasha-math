@@ -59,9 +59,6 @@ const Scale = {
       b.appendChild(tag);
     }
     b.addEventListener('pointerdown', (e) => this._down(e, term, b));
-    b.addEventListener('pointermove', (e) => this._move(e));
-    b.addEventListener('pointerup',   (e) => this._up(e));
-    b.addEventListener('pointercancel', (e) => this._up(e));
     b.addEventListener('click', (e) => {
       e.stopPropagation();
       if (this._suppressClick) { this._suppressClick = false; return; }
@@ -91,13 +88,21 @@ const Scale = {
     requestAnimationFrame(() => this.position(angle || 0));
   },
 
-  /* ---------- drag handling (mouse + touch via pointer events) ---------- */
+  /* ---------- drag handling (mouse + touch via pointer events) ----------
+     Move/up are bound on `document` (not the block) so the drag keeps
+     working even though each render rebuilds the block elements, and
+     regardless of what sits under the pointer. */
   _down(e, term, el) {
+    if (e.button != null && e.button !== 0) return;   // left button / touch only
     this._suppressClick = false;
     const r = el.getBoundingClientRect();
     this._drag = { id: term.id, el, sx: e.clientX, sy: e.clientY,
                    w: r.width, h: r.height, moved: false };
-    try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    this._moveBound = (ev) => this._move(ev);
+    this._upBound   = (ev) => this._up(ev);
+    document.addEventListener('pointermove', this._moveBound);
+    document.addEventListener('pointerup', this._upBound);
+    document.addEventListener('pointercancel', this._upBound);
   },
 
   _move(e) {
@@ -105,12 +110,14 @@ const Scale = {
     if (!d) return;
     const dx = e.clientX - d.sx, dy = e.clientY - d.sy;
     if (!d.moved && Math.hypot(dx, dy) < 6) return;
+    e.preventDefault();                    // no text selection while dragging
     if (!d.moved) {
       d.moved = true;
       this._suppressClick = true;
       document.body.classList.add('dragging');
       d.el.classList.add('drag');
       d.el.style.width = d.w + 'px';
+      d.el.style.height = d.h + 'px';
     }
     d.el.style.left = (e.clientX - d.w / 2) + 'px';
     d.el.style.top  = (e.clientY - d.h / 2) + 'px';
@@ -121,9 +128,12 @@ const Scale = {
   _up(e) {
     const d = this._drag;
     this._drag = null;
+    document.removeEventListener('pointermove', this._moveBound);
+    document.removeEventListener('pointerup', this._upBound);
+    document.removeEventListener('pointercancel', this._upBound);
     if (!d) return;
-    if (!d.moved) {                       // it was a tap, not a drag
-      if (this.onBlockClick) this.onBlockClick(d.id);
+    if (!d.moved) {                       // it was a tap — let the native
+      this._suppressClick = false;        // click event do the selecting
       return;
     }
     const target = this._target(e.clientX, e.clientY);
