@@ -203,6 +203,64 @@ body.dragging { cursor: grabbing; }
 .explain ul { margin: 0; padding-left: 22px; }
 .explain li { font-size: 16px; line-height: 1.5; color: var(--ink); margin: 3px 0; }
 
+/* ---------- the try-it balloon lab ---------- */
+.balloon-lab {
+  margin-top: 12px; padding-top: 12px; border-top: 2px dashed #f0b39e;
+}
+.lab-tip { font-size: 15px; color: var(--ink); margin-bottom: 6px; }
+.lab-sky {
+  position: relative; height: 200px; border-radius: 14px;
+  background: linear-gradient(#dff1ff, #f4fbff);
+  overflow: hidden; border: 2px solid #cfe6f5;
+}
+.lab-line {        /* the floor line the balloon can sink toward */
+  position: absolute; left: 0; right: 0; bottom: 26px; height: 0;
+  border-top: 3px dashed #b8d4e6;
+}
+.lab-balloon {
+  position: absolute; left: 50%; top: 18px;
+  transform: translateX(-50%);
+  transition: transform .6s cubic-bezier(.34,1.2,.5,1);
+  display: flex; flex-direction: column; align-items: center;
+  will-change: transform;
+}
+.lab-bbody {
+  width: 76px; height: 92px; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 26px;
+  background: radial-gradient(circle at 32% 28%, #ff9c7a, var(--take) 70%);
+  border-radius: 50% 50% 50% 50% / 46% 46% 54% 54%;
+  box-shadow: inset -4px -5px 10px rgba(0,0,0,.18), 0 6px 14px rgba(0,0,0,.18);
+  position: relative;
+}
+.lab-bbody::after {            /* knot + string down to the weights */
+  content: ""; position: absolute; top: 100%; left: 50%; margin-left: -1.5px;
+  width: 3px; height: 18px; background: #b59a5f;
+}
+.lab-weights {
+  margin-top: 18px; display: flex; flex-wrap: wrap; gap: 3px;
+  justify-content: center; max-width: 120px;
+}
+.lab-weight {
+  width: 22px; height: 22px; border-radius: 5px;
+  background: var(--num); border-bottom: 3px solid var(--num-d);
+  color: #fff; font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.lab-balloon.lab-popped .lab-bbody { animation: labglow 1s ease-in-out infinite; }
+@keyframes labglow { 0%,100% { box-shadow: inset -4px -5px 10px rgba(0,0,0,.18), 0 0 0 rgba(46,158,91,0); }
+  50% { box-shadow: inset -4px -5px 10px rgba(0,0,0,.18), 0 0 0 6px rgba(46,158,91,.35); } }
+.lab-status {
+  text-align: center; font-size: 15px; font-weight: 700; min-height: 22px;
+  margin: 8px 0 6px; padding: 6px 10px; border-radius: 10px;
+}
+.lab-status.up   { color: #1c6fb0; background: #e3f1fb; }
+.lab-status.zero { color: #2e7d32; background: #e6f4e6; }
+.lab-status.down { color: #b3401b; background: #fde6dd; }
+.lab-controls {
+  display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;
+}
+.lab-count { font-size: 14px; font-weight: 700; color: #5a6b80; min-width: 110px; text-align: center; }
+
 /* ---------- actions ---------- */
 .actions {
   display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;

@@ -41,6 +41,24 @@
         <li>A <b>weight + the same balloon = 0</b> → they pull equally and <b>float away</b> together</li>
         <li>So to remove a <b>−3</b>: drop a <b>+3 weight</b> on it. Then do the <b>same to the other pan</b> to keep it fair ⚖️</li>
       </ul>
+
+      <!-- Try-it balloon lab: load weights onto a −5 balloon and watch it move -->
+      <div class="balloon-lab" id="balloonLab">
+        <div class="lab-tip">👇 Try it! Add weights to the <b>−5 balloon</b> and watch what it does:</div>
+        <div class="lab-sky">
+          <div class="lab-line"></div>
+          <div class="lab-balloon" id="labBalloon">
+            <div class="lab-bbody">−5</div>
+            <div class="lab-weights" id="labWeights"></div>
+          </div>
+        </div>
+        <div class="lab-status" id="labStatus"></div>
+        <div class="lab-controls">
+          <button class="btn ghost tiny" id="labMinus">− take a weight off</button>
+          <span class="lab-count" id="labCount">weights on it: 0</span>
+          <button class="btn tiny" id="labPlus">+ add a weight</button>
+        </div>
+      </div>
     </aside>
 
     <!-- Supply bin: infinite +weights for cancelling balloons (negatives).
@@ -66,6 +84,7 @@
 
   <script src="js/equation.js"></script>
   <script src="js/scale.js"></script>
+  <script src="js/balloonlab.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
