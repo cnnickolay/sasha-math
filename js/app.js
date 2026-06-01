@@ -16,6 +16,18 @@ const PROBLEMS = [
   { id: 'neg', title: 'x − 3 = 5   (meet the balloon!)',
     def: { L: [['x', 1], ['n', -3]], R: [['n', 5]] },
     intro: 'A <b>−3 is a balloon</b> 🎈 — it pulls the pan UP instead of down (you cannot put negative weight on a scale, but a balloon lifts!). To get rid of it, drag a <b>+3 weight from the bin</b> onto the SAME pan: the weight and the balloon cancel out and float away — that is <b>+3 and −3 = 0</b>. Then add a 3 to the OTHER pan too, to keep it fair!' },
+  { id: 'neg2', title: 'x − 5 = 2',
+    def: { L: [['x', 1], ['n', -5]], R: [['n', 2]] },
+    intro: 'Another balloon 🎈. Drag a <b>+5 weight</b> onto the balloon to pop the pair (−5 and +5 = 0), then add a 5 to the other pan too.' },
+  { id: 'neg3', title: '8 = x − 2   (balloon on the right)',
+    def: { L: [['n', 8]], R: [['x', 1], ['n', -2]] },
+    intro: 'This time the balloon 🎈 is on the <b>right</b>, with x. Drop a <b>+2 weight</b> on the right to cancel it, then add a 2 to the left to stay fair.' },
+  { id: 'neg4', title: 'x − 4 = 3 − 4   (a balloon on EACH pan)',
+    def: { L: [['x', 1], ['n', -4]], R: [['n', 3], ['n', -4]] },
+    intro: 'There is a balloon 🎈 on <b>both</b> pans! Drop a <b>+4 weight</b> on each pan to pop both balloons. Same change to both sides → it stays fair, and x is left alone.' },
+  { id: 'neg5', title: 'x − 6 = 5 + 3   (balloon + adding up)',
+    def: { L: [['x', 1], ['n', -6]], R: [['n', 5], ['n', 3]] },
+    intro: 'First tidy the right pan: tap a number and press ➕ to add 5 + 3 = 8. Then pop the balloon 🎈 with a <b>+6 weight</b>, and add a 6 to the other pan too — then ➕ add those up to find x.' },
 ];
 
 let state = null;
