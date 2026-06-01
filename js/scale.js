@@ -3,10 +3,10 @@
    the beam ends. Tilt is driven by the weight difference the app feeds in. */
 
 const Scale = {
-  beam: null, panL: null, panR: null, stage: null, tray: null,
+  beam: null, panL: null, panR: null, stage: null, desk: null,
   onBlockClick: null,   // tap a block        -> app
   onDrag: null,         // block being dragged -> app (returns nothing)
-  onDrop: null,         // block dropped       -> app (id, target)
+  onDrop: null,         // block dropped       -> app (id, target, info)
 
   MAX: 12,              // biggest gentle tilt, degrees
   SCALE: 26,            // weight units that map to a strong tilt
@@ -20,7 +20,7 @@ const Scale = {
     this.panL  = document.getElementById('panL');
     this.panR  = document.getElementById('panR');
     this.stage = document.getElementById('stage');
-    this.tray  = document.getElementById('tray');
+    this.desk  = document.getElementById('desk');
     window.addEventListener('resize', () => this.position(this._lastAngle || 0));
   },
 
@@ -81,9 +81,26 @@ const Scale = {
     pan.appendChild(dish);
   },
 
+  /* draw the set-aside blocks, each at its stored {x,y} (px relative to the
+     desk). Blocks here are the same draggable elements as on the pans. */
+  renderDesk(parked, selId) {
+    // keep the label, remove old parked blocks
+    this.desk.querySelectorAll('.block').forEach(b => b.remove());
+    this.desk.classList.toggle('has-blocks', parked.length > 0);
+    parked.forEach(p => {
+      const el = this.blockEl(p.term);
+      el.classList.add('parked');
+      if (p.term.id === selId) el.classList.add('sel');
+      el.style.left = p.x + 'px';
+      el.style.top  = p.y + 'px';
+      this.desk.appendChild(el);
+    });
+  },
+
   render(state, selId, angle) {
     this.renderSide(this.panL, state.L, selId);
     this.renderSide(this.panR, state.R, selId);
+    this.renderDesk(state.desk || [], selId);
     requestAnimationFrame(() => this.position(angle || 0));
   },
 
@@ -148,9 +165,14 @@ const Scale = {
     this._armClickGuard();
     document.body.classList.remove('dragging');
     this._clearHighlight();
-    const target = (e.type === 'pointercancel') ? null
-                                                : this._target(e.clientX, e.clientY);
-    if (this.onDrop) this.onDrop(d.id, target);   // app re-renders
+    const cancelled = (e.type === 'pointercancel');
+    const target = cancelled ? null : this._target(e.clientX, e.clientY);
+    // drop position relative to the desk box (block top-left), so the app can
+    // park it exactly where the finger let go.
+    const dr = this.desk.getBoundingClientRect();
+    const info = { x: (e.clientX - d.gx) - dr.left, y: (e.clientY - d.gy) - dr.top,
+                   w: d.w, h: d.h, deskW: dr.width, deskH: dr.height };
+    if (this.onDrop) this.onDrop(d.id, target, info);   // app re-renders
   },
 
   /* one-shot capture-phase guard: eats the click that a drag-release fires,
@@ -171,19 +193,20 @@ const Scale = {
     return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
   },
   _target(x, y) {
-    if (this.tray && this._hit(this.tray, x, y)) return 'remove';
+    // pans win over the desk when they overlap (you're putting it back on)
     if (this._hit(this.panL, x, y)) return 'L';
     if (this._hit(this.panR, x, y)) return 'R';
+    if (this.desk && this._hit(this.desk, x, y)) return 'desk';
     return null;
   },
   _highlight(x, y) {
     const t = this._target(x, y);
-    this.tray.classList.toggle('over', t === 'remove');
+    this.desk.classList.toggle('over', t === 'desk');
     this.panL.classList.toggle('over', t === 'L');
     this.panR.classList.toggle('over', t === 'R');
   },
   _clearHighlight() {
-    this.tray.classList.remove('over');
+    this.desk.classList.remove('over');
     this.panL.classList.remove('over');
     this.panR.classList.remove('over');
   },

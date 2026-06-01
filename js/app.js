@@ -3,10 +3,10 @@
 const PROBLEMS = [
   { id: 'twins', title: 'x + 22 = 30 + 22   (the +22 trick)',
     def: { L: [['x', 1], ['n', 22]], R: [['n', 30], ['n', 22]] },
-    intro: 'Both pans weigh the same — that is what = means. See the <b>22</b> on BOTH pans? <b>Drag one 22 to the 🗑️ tray</b> and watch the scale tip! Then take the OTHER 22 off and it balances again — leaving x all alone.' },
+    intro: 'Both pans weigh the same — that is what = means. See the <b>22</b> on BOTH pans? <b>Drag one 22 onto the 🧺 shelf</b> and watch the scale tip! Then set the OTHER 22 aside and it balances again — leaving x all alone.' },
   { id: 'p1', title: 'x + 7 = 5 + 7',
     def: { L: [['x', 1], ['n', 7]], R: [['n', 5], ['n', 7]] },
-    intro: 'There is a <b>7</b> on both pans. Drag both 7s to the 🗑️ tray — one at a time — and watch what happens. When only x is left, the scale tells you what x weighs!' },
+    intro: 'There is a <b>7</b> on both pans. Drag both 7s onto the 🧺 shelf — one at a time — and watch what happens. When only x is left, the scale tells you what x weighs!' },
   { id: 'p2', title: '9 + x = 9 + 6',
     def: { L: [['n', 9], ['x', 1]], R: [['n', 9], ['n', 6]] },
     intro: 'Same idea — there is a <b>9</b> on both pans. Take both 9s off to leave x on its own.' },
@@ -50,13 +50,26 @@ const winBanner= document.getElementById('winBanner');
 const picker   = document.getElementById('puzzle');
 
 /* ---------- helpers on state ---------- */
+function deskTerm(id) {
+  const p = state.desk.find(d => d.term.id === id);
+  return p ? p.term : null;
+}
+function termById(id) {
+  return state.L.find(t => t.id === id) ||
+         state.R.find(t => t.id === id) ||
+         deskTerm(id) || null;
+}
 function selectedTerm() {
   if (selId == null) return null;
-  return state.L.find(t => t.id === selId) || state.R.find(t => t.id === selId) || null;
+  return state.L.find(t => t.id === selId) ||
+         state.R.find(t => t.id === selId) ||
+         deskTerm(selId) || null;
 }
+// 'L', 'R', 'desk', or null — where the block with this id currently lives.
 function sideOf(id) {
   if (state.L.some(t => t.id === id)) return 'L';
   if (state.R.some(t => t.id === id)) return 'R';
+  if (state.desk.some(d => d.term.id === id)) return 'desk';
   return null;
 }
 
@@ -120,14 +133,19 @@ function buildActions() {
 
   const sel = selectedTerm();
   if (!sel) {
-    addHint('👆 <b>Drag</b> a block to the 🗑️ tray to take it off the scale (watch it tip!), or tap a block to see helper buttons.');
+    addHint('👆 <b>Drag</b> a block to the 🧺 shelf to set it aside (watch the scale tip!), then drag its partner off too. You can drag shelf blocks back any time. Tap a block for helper buttons.');
     return;
   }
   const side = sideOf(sel.id);
 
+  if (side === 'desk') {
+    addHint('This block is on the 🧺 shelf. <b>Drag it back onto a pan</b> whenever you want.');
+    return;
+  }
+
   const twin = EQ.twin(state, sel, side);
   if (twin) {
-    addBtn('both', `⚖️ Take ${EQ.body(sel)} off BOTH pans`, () => removeBoth(sel, side));
+    addBtn('both', `⚖️ Set ${EQ.body(sel)} aside from BOTH pans`, () => removeBoth(sel, side));
   }
   if (EQ.numbers(state[side]).length >= 2) {
     addBtn('add', '➕ Add the numbers on this pan', () => combineNumbers(side));
@@ -142,44 +160,82 @@ function buildActions() {
 
 /* ---------- the operations (physical balance) ---------- */
 
-// Lift a block right off the scale. The pan it left gets lighter, so the
-// scale tilts — unless an equal block is also gone from the other pan.
-function takeOff(term, side) {
-  state[side] = state[side].filter(t => t.id !== term.id);
+// pull a block out of wherever it lives (a pan or the shelf).
+function detach(id, from) {
+  if (from === 'desk') state.desk = state.desk.filter(d => d.term.id !== id);
+  else state[from] = state[from].filter(t => t.id !== id);
+}
+// keep a parked block fully inside the shelf box.
+function clampToDesk(info) {
+  const maxX = Math.max(0, (info.deskW || 9999) - info.w);
+  const maxY = Math.max(0, (info.deskH || 9999) - info.h);
+  return { x: Math.min(Math.max(0, info.x), maxX),
+           y: Math.min(Math.max(0, info.y), maxY) };
+}
+
+// Set a block aside on the shelf. If it came off a pan, that pan gets lighter
+// (the scale tips) unless its partner is gone too.
+function setAside(term, from, info) {
+  if (from === 'desk') { reparkLoose(term, info); return; }  // just moved on shelf
+  detach(term.id, from);
+  const pos = clampToDesk(info);
+  state.desk.push({ term, x: pos.x, y: pos.y });
   selId = null;
   const balanced = Math.abs(weightDiff()) < 1e-9;
   if (balanced) {
-    say(`✅ Took <b>${EQ.body(term)}</b> off — and the scale stayed level!`,
+    say(`✅ Set <b>${EQ.body(term)}</b> aside — and the scale stayed level!`,
         'Both pans lost the same amount, so it is still fair. That is the trick.');
   } else {
-    say(`⚖️ Took <b>${EQ.body(term)}</b> off the ${side === 'L' ? 'left' : 'right'} pan — now that side is lighter, so the scale tips.`,
-        'To keep it level, take the SAME amount off the OTHER pan too.');
+    say(`⚖️ Set <b>${EQ.body(term)}</b> aside from the ${from === 'L' ? 'left' : 'right'} pan — now that side is lighter, so the scale tips.`,
+        'To keep it level, take the SAME amount off the OTHER pan too. (Set-aside blocks wait on the shelf — drag one back any time.)');
   }
   refresh();
 }
 
-// Button version of the fair move: remove a matched pair from both pans at once.
+// move an already-parked block to a new spot on the shelf.
+function reparkLoose(term, info) {
+  const pos = clampToDesk(info);
+  const p = state.desk.find(d => d.term.id === term.id);
+  if (p) { p.x = pos.x; p.y = pos.y; }
+  selId = null;
+  refresh();
+}
+
+// Button version of the fair move: set a matched pair aside from both pans.
 function removeBoth(term, side) {
   const twin = EQ.twin(state, term, side);
   if (!twin) return;
-  state[side] = state[side].filter(t => t.id !== term.id);
-  const o = EQ.other(side);
-  state[o] = state[o].filter(t => t.id !== twin.id);
+  detach(term.id, side);
+  detach(twin.id, EQ.other(side));
+  // tuck the pair onto the shelf, side by side
+  stash(term);
+  stash(twin);
   selId = null;
-  say(`✅ Took <b>${EQ.body(term)}</b> off <b>both</b> pans.`,
+  say(`✅ Set <b>${EQ.body(term)}</b> aside from <b>both</b> pans.`,
       'Same amount removed from each side → it stays fair, so the scale stays level.');
   refresh();
 }
 
-// Move a block onto a pan. If it crosses to the other pan, weight really
-// moves there (no sign trick) — so the scale leans that way.
-function moveToPan(term, side, target) {
-  if (target === side) { refresh(); return; }   // dropped back on its own pan
-  state[side] = state[side].filter(t => t.id !== term.id);
+// place a block on the shelf at an auto-chosen free-ish spot.
+function stash(term) {
+  const n = state.desk.length;
+  state.desk.push({ term, x: 14 + (n % 6) * 64, y: 30 + Math.floor(n / 6) * 56 });
+}
+
+// Move a block onto a pan (from the other pan or from the shelf). Weight
+// really moves there (no sign trick) — so the scale leans that way.
+function moveToPan(term, from, target) {
+  if (target === from) { refresh(); return; }   // dropped back where it was
+  detach(term.id, from);
   state[target].push(term);
   selId = null;
-  say(`✋ Moved <b>${EQ.body(term)}</b> onto the ${target === 'L' ? 'left' : 'right'} pan.`,
-      'That pan got heavier and the other got lighter — moving weight to one side tips the scale. To stay fair, change both pans the same way.');
+  if (from === 'desk') {
+    say(`✋ Put <b>${EQ.body(term)}</b> back onto the ${target === 'L' ? 'left' : 'right'} pan.`,
+        'That pan got heavier — adding to one side alone tips the scale.');
+  } else {
+    say(`✋ Moved <b>${EQ.body(term)}</b> onto the ${target === 'L' ? 'left' : 'right'} pan.`,
+        'That pan got heavier and the other got lighter — moving weight to one side tips the scale. To stay fair, change both pans the same way.');
+  }
   refresh();
 }
 
@@ -252,6 +308,7 @@ function loadProblem(p) {
   currentDef = p.def;
   SOLUTION = solveX(p.def);
   state = EQ.build(p.def);
+  state.desk = [];                 // blocks set aside off the scale: {term,x,y}
   selId = null;
   solved = false;
   winBanner.classList.remove('show');
@@ -273,19 +330,23 @@ function boot() {
     Scale.position(Scale.angleFor(weightDiff(id, side)));
   };
 
-  // where the block was dropped — a real balance: the block STAYS there.
-  Scale.onDrop = (id, target) => {
+  // where the block was dropped — a real balance: the block STAYS where you
+  // put it. Pans hold weight; the shelf holds set-aside blocks at free spots.
+  Scale.onDrop = (id, target, info) => {
     if (solved) { refresh(); return; }
-    const side = sideOf(id);
-    const term = (state.L.concat(state.R)).find(t => t.id === id);
-    if (!term || !side) { refresh(); return; }
+    const from = sideOf(id);
+    const term = termById(id);
+    if (!term || !from) { refresh(); return; }
 
-    if (target === 'remove') {
-      takeOff(term, side);                    // lift it off the scale entirely
+    if (target === 'desk') {
+      setAside(term, from, info);             // park it on the shelf
     } else if (target === 'L' || target === 'R') {
-      moveToPan(term, side, target);          // drop it on a pan (maybe the other)
+      moveToPan(term, from, target);          // drop onto a pan
     } else {
-      refresh();                              // dropped in empty space -> snap home
+      // dropped in empty space: if it came from the shelf, re-park it where
+      // it landed (so it doesn't jump home); otherwise snap back.
+      if (from === 'desk' && info) { reparkLoose(term, info); }
+      else refresh();
     }
   };
 

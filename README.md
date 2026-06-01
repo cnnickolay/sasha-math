@@ -13,10 +13,12 @@ An equation is a **real balance scale**. The `=` means the two pans weigh the
 same. The blocks are weights — drop them and they stay put, and the heavier pan
 sinks.
 
-- **Drag a block to the 🗑️ tray** to lift it off the scale. Take a block off
-  ONE pan and that pan gets lighter, so the scale **tips** (the relation in the
-  equation bar becomes `<` or `>`). Take the matching block off the OTHER pan and
-  it **balances again** — that is the whole lesson: *do the same to both sides.*
+- **Drag a block onto the 🧺 shelf** to set it aside off the scale (it stays
+  there where you drop it, and you can drag it back onto a pan any time). Take a
+  block off ONE pan and that pan gets lighter, so the scale **tips** (the relation
+  in the equation bar becomes `<` or `>`). Set the matching block aside from the
+  OTHER pan and it **balances again** — that is the whole lesson: *do the same to
+  both sides.*
 - **Drag a block to the other pan** — the weight really moves, so the scale leans
   that way (it does **not** keep the equation true; you feel that it is unfair).
 - **➕ Add the numbers** — tidy up a pan by adding its numbers together.
