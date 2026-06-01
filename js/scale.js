@@ -138,7 +138,7 @@ const Scale = {
 
   _up(e) {
     const d = this._drag;
-    if (!d || (e.pointerId !== d.pid && e.type !== 'pointercancel')) return;
+    if (!d || e.pointerId !== d.pid) return;   // only the owning pointer ends it
     this._drag = null;
     if (this._ac) { this._ac.abort(); this._ac = null; }
     if (d.ghost) d.ghost.remove();
