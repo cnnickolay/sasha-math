@@ -355,6 +355,8 @@ function loadProblem(p) {
   state = EQ.build(p.def);
   state.desk = [];                 // blocks set aside off the scale: {term,x,y}
   state.supply = supplyValues(p.def);  // infinite +weights to cancel balloons
+  // the balloon explainer rides along whenever a puzzle has balloons
+  document.getElementById('explain').classList.toggle('hidden', state.supply.length === 0);
   selId = null;
   solved = false;
   winBanner.classList.remove('show');
