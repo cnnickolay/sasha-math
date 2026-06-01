@@ -424,6 +424,15 @@ function boot() {
   document.getElementById('resetBtn').onclick = () => loadProblem(PROBLEMS[picker.value]);
   document.getElementById('stage').addEventListener('click', () => { if (selId != null) { selId = null; refresh(); } });
 
-  loadProblem(PROBLEMS[0]);
+  // optional deep-link: ?p=<id> or ?p=<index> opens that puzzle
+  let start = 0;
+  const q = new URLSearchParams(location.search).get('p');
+  if (q != null) {
+    const byId = PROBLEMS.findIndex(p => p.id === q);
+    const idx = byId >= 0 ? byId : (Number.isInteger(+q) ? +q : -1);
+    if (idx >= 0 && idx < PROBLEMS.length) start = idx;
+  }
+  picker.value = start;
+  loadProblem(PROBLEMS[start]);
 }
 document.addEventListener('DOMContentLoaded', boot);

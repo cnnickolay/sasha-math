@@ -172,7 +172,7 @@ body.dragging { cursor: grabbing; }
   width: 2px; height: 16px; margin-left: -1px;
   background: #b59a5f;
 }
-@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes bob { 0%,100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-5px) rotate(1.5deg); } }
 .block.balloon.fly { animation: floatAway .9s ease-in forwards; }
 @keyframes floatAway { to { transform: translateY(-160px) scale(.7); opacity: 0; } }
 
@@ -188,9 +188,13 @@ body.dragging { cursor: grabbing; }
 .supply.hidden { display: none; }
 .supply::before {
   content: "🪙 weights — drag onto a pan";
-  color: #5a7aa0; font-weight: 700; font-size: 14px; margin-right: 4px;
+  flex: 1 0 100%; text-align: center;
+  color: #5a7aa0; font-weight: 700; font-size: 14px; margin-bottom: 2px;
 }
-.supply .block.supply { cursor: grab; box-shadow: 0 4px 0 var(--num-d); }
+.supply .block.supply {
+  cursor: grab; box-shadow: 0 4px 0 var(--num-d);
+  min-width: 46px; padding: 8px 12px; font-size: 20px;
+}
 
 /* ---------- balloon explainer card ---------- */
 .explain {
@@ -209,20 +213,24 @@ body.dragging { cursor: grabbing; }
 }
 .lab-tip { font-size: 15px; color: var(--ink); margin-bottom: 6px; }
 .lab-sky {
-  position: relative; height: 200px; border-radius: 14px;
+  position: relative; height: 250px; border-radius: 14px;
   background: linear-gradient(#dff1ff, #f4fbff);
   overflow: hidden; border: 2px solid #cfe6f5;
 }
 .lab-line {        /* the floor line the balloon can sink toward */
-  position: absolute; left: 0; right: 0; bottom: 26px; height: 0;
+  position: absolute; left: 0; right: 0; bottom: 18px; height: 0;
   border-top: 3px dashed #b8d4e6;
 }
+.lab-line::after {
+  content: "ground"; position: absolute; right: 8px; top: 4px;
+  font-size: 11px; color: #9bbdd4; font-weight: 700;
+}
 .lab-balloon {
-  position: absolute; left: 50%; top: 18px;
+  position: absolute; left: 50%; top: 10px;
   transform: translateX(-50%);
-  transition: transform .6s cubic-bezier(.34,1.2,.5,1);
+  transition: top .7s cubic-bezier(.34,1.2,.5,1);
   display: flex; flex-direction: column; align-items: center;
-  will-change: transform;
+  will-change: top;
 }
 .lab-bbody {
   width: 76px; height: 92px; display: flex; align-items: center; justify-content: center;

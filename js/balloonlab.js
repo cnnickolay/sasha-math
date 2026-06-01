@@ -31,9 +31,11 @@ const BalloonLab = {
   // net < 0 -> floats up, net == 0 -> hovers, net > 0 -> sinks.
   render() {
     const net = this.weights - this.LIFT;        // -5 .. +5
-    // map net to a vertical offset: net<0 floats up, net>0 sinks down.
-    const y = net * 14;                            // px; +down, −up
-    this.els.balloon.style.transform = `translateX(-50%) translateY(${y}px)`;
+    // map net (-5..+5) to a top position inside the sky (small=high, big=low).
+    // net<0 floats UP (near top), net=0 hovers (middle), net>0 sinks (low).
+    const t = (net + 5) / 10;                      // 0 .. 1
+    const topPx = 10 + t * 96;                     // 10px (up) .. 106px (down)
+    this.els.balloon.style.top = topPx + 'px';
 
     // draw the weights hanging under the balloon
     this.els.weights.innerHTML = '';
