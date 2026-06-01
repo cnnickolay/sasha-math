@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Balance the Equation</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>⚖️ Balance the Equation</h1>
+    <div class="picker">
+      <label for="puzzle">Puzzle:</label>
+      <select id="puzzle"></select>
+    </div>
+  </header>
+
+  <main>
+    <!-- The big equation, made of clickable term chips -->
+    <section class="equation-bar" id="equationBar" aria-label="The equation"></section>
+
+    <!-- Balance indicator -->
+    <div class="balance-badge" id="balanceBadge">⚖️ Balanced — both sides are equal</div>
+
+    <!-- The scale -->
+    <section class="stage" id="stage">
+      <div class="beam" id="beam"></div>
+      <div class="fulcrum"></div>
+      <div class="pan" id="panL"></div>
+      <div class="pan" id="panR"></div>
+      <div class="winBanner" id="winBanner"></div>
+    </section>
+
+    <!-- What you can do right now -->
+    <section class="actions" id="actions"></section>
+
+    <!-- Coach speech -->
+    <section class="coach" id="coach"></section>
+
+    <div class="footer-controls">
+      <button class="btn ghost" id="resetBtn">↺ Start this puzzle over</button>
+    </div>
+  </main>
+
+  <script src="js/equation.js"></script>
+  <script src="js/scale.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
