@@ -135,20 +135,19 @@ body.dragging .tray { border-color: #e0992a; color: var(--take-d); }
   outline: 3px solid transparent; position: relative;
 }
 .block:active { transform: translateY(2px); }
+/* the source block stays in its slot (keeps the pan from resizing) but is
+   invisible while its ghost is being dragged */
+.block.ghosted { opacity: 0; }
+/* the floating ghost clone that follows the pointer */
 .block.drag {
-  position: fixed; z-index: 60; cursor: grabbing; pointer-events: none;
+  position: fixed; z-index: 60; margin: 0; cursor: grabbing;
+  pointer-events: none; transition: none;
   transform: scale(1.08) rotate(-3deg);
   box-shadow: 0 12px 22px rgba(0,0,0,.35);
 }
-/* while dragging, the beam still eases — just quicker, so it feels gentle
-   and responsive (not the slow 0.7s settle, not an instant snap) */
-body.dragging .beam {
-  transition: transform .28s cubic-bezier(.22,.61,.36,1) !important;
-}
-body.dragging .pan {
-  transition: top .28s cubic-bezier(.22,.61,.36,1),
-              left .28s cubic-bezier(.22,.61,.36,1) !important;
-}
+/* while dragging, the beam/pans must sit EXACTLY where the code puts them
+   (the ghost is what follows the finger) — no easing to lag behind */
+body.dragging .beam, body.dragging .pan { transition: none !important; }
 body.dragging { cursor: grabbing; }
 .block.num  { background: var(--num);  border-bottom: 4px solid var(--num-d); }
 .block.x    { background: var(--x);    border-bottom: 4px solid var(--x-d); }
