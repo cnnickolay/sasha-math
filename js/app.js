@@ -1,18 +1,18 @@
 /* app.js — wires the model + scale + UI together, and does the talking. */
 
 const PROBLEMS = [
-  { id: 'twins', title: '28 + 22 = 30 + 22 − x   (the +22 trick)',
-    def: { L: [['n', 28], ['n', 22]], R: [['n', 30], ['n', 22], ['x', -1]] },
-    intro: 'Both pans weigh the same — that is what the = means. See the <b>22</b> on BOTH sides? Try <b>dragging</b> a 22 down to the 🗑️ tray and watch the scale.' },
-  { id: 'p1', title: 'x + 7 = 12',
-    def: { L: [['x', 1], ['n', 7]], R: [['n', 12]] },
-    intro: 'Get x on its own. Tap the <b>7</b>, then send it across the =.' },
-  { id: 'p2', title: '18 = x + 6',
-    def: { L: [['n', 18]], R: [['x', 1], ['n', 6]] },
-    intro: 'This time x is on the right. Get it by itself.' },
-  { id: 'p3', title: '9 + x = 4 + 11',
-    def: { L: [['n', 9], ['x', 1]], R: [['n', 4], ['n', 11]] },
-    intro: 'Tip: tap a number on the right and add the numbers up first.' },
+  { id: 'twins', title: 'x + 22 = 30 + 22   (the +22 trick)',
+    def: { L: [['x', 1], ['n', 22]], R: [['n', 30], ['n', 22]] },
+    intro: 'Both pans weigh the same — that is what = means. See the <b>22</b> on BOTH pans? <b>Drag one 22 to the 🗑️ tray</b> and watch the scale tip! Then take the OTHER 22 off and it balances again — leaving x all alone.' },
+  { id: 'p1', title: 'x + 7 = 5 + 7',
+    def: { L: [['x', 1], ['n', 7]], R: [['n', 5], ['n', 7]] },
+    intro: 'There is a <b>7</b> on both pans. Drag both 7s to the 🗑️ tray — one at a time — and watch what happens. When only x is left, the scale tells you what x weighs!' },
+  { id: 'p2', title: '9 + x = 9 + 6',
+    def: { L: [['n', 9], ['x', 1]], R: [['n', 9], ['n', 6]] },
+    intro: 'Same idea — there is a <b>9</b> on both pans. Take both 9s off to leave x on its own.' },
+  { id: 'p3', title: 'x + 4 + 9 = 13 + 4 + 9',
+    def: { L: [['x', 1], ['n', 4], ['n', 9]], R: [['n', 13], ['n', 4], ['n', 9]] },
+    intro: 'This one has <b>two</b> matching pairs: a 4 on both pans and a 9 on both pans. Take each pair off (both 4s, both 9s) to leave x alone.' },
 ];
 
 let state = null;
@@ -94,7 +94,9 @@ function renderSideChips(side) {
 function renderEquationBar() {
   eqBar.innerHTML = '';
   renderSideChips(state.L);
-  addOp(eqBar, '=');
+  const diff = weightDiff();              // right − left
+  const rel = Math.abs(diff) < 1e-9 ? '=' : (diff > 0 ? '<' : '>');
+  addOp(eqBar, rel);
   renderSideChips(state.R);
 }
 
@@ -118,31 +120,45 @@ function buildActions() {
 
   const sel = selectedTerm();
   if (!sel) {
-    addHint('👆 Tap a block to pick it — or <b>drag</b> it: to the other pan to send it across, or to the 🗑️ tray to take it off.');
+    addHint('👆 <b>Drag</b> a block to the 🗑️ tray to take it off the scale (watch it tip!), or tap a block to see helper buttons.');
     return;
   }
   const side = sideOf(sel.id);
 
   const twin = EQ.twin(state, sel, side);
   if (twin) {
-    addBtn('both', `⚖️ Take ${EQ.body(sel)} off BOTH sides`, () => removeBoth(sel, side));
-    addBtn('ghost tiny', '🤔 Why both?', whyBoth);
-  }
-  if (state[side].length > 1) {
-    addBtn('cross', `↔️ Send ${EQ.body(sel)} across the =`, () => sendAcross(sel, side));
+    addBtn('both', `⚖️ Take ${EQ.body(sel)} off BOTH pans`, () => removeBoth(sel, side));
   }
   if (EQ.numbers(state[side]).length >= 2) {
-    addBtn('add', '➕ Add the numbers on this side', () => combineNumbers(side));
+    addBtn('add', '➕ Add the numbers on this pan', () => combineNumbers(side));
   }
-  if (EQ.loneNegX(state)) {
-    addBtn('ghost', '± Flip the sign on both sides', flipBoth);
+  if (!twin && !sel.isX && EQ.numbers(state[side]).length < 2) {
+    addHint('Hmm, this block has no match on the other pan. Look for a number that is on BOTH pans 🙂');
   }
-  if (!twin && state[side].length === 1 && EQ.numbers(state[side]).length < 2) {
-    addHint('That pan has just one piece. Try working on the other pan 🙂');
+  if (sel.isX) {
+    addHint('That is the mystery <b>x</b>! Clear the other blocks off its pan to find out what it weighs.');
   }
 }
 
-/* ---------- the operations ---------- */
+/* ---------- the operations (physical balance) ---------- */
+
+// Lift a block right off the scale. The pan it left gets lighter, so the
+// scale tilts — unless an equal block is also gone from the other pan.
+function takeOff(term, side) {
+  state[side] = state[side].filter(t => t.id !== term.id);
+  selId = null;
+  const balanced = Math.abs(weightDiff()) < 1e-9;
+  if (balanced) {
+    say(`✅ Took <b>${EQ.body(term)}</b> off — and the scale stayed level!`,
+        'Both pans lost the same amount, so it is still fair. That is the trick.');
+  } else {
+    say(`⚖️ Took <b>${EQ.body(term)}</b> off the ${side === 'L' ? 'left' : 'right'} pan — now that side is lighter, so the scale tips.`,
+        'To keep it level, take the SAME amount off the OTHER pan too.');
+  }
+  refresh();
+}
+
+// Button version of the fair move: remove a matched pair from both pans at once.
 function removeBoth(term, side) {
   const twin = EQ.twin(state, term, side);
   if (!twin) return;
@@ -151,20 +167,19 @@ function removeBoth(term, side) {
   state[o] = state[o].filter(t => t.id !== twin.id);
   selId = null;
   say(`✅ Took <b>${EQ.body(term)}</b> off <b>both</b> pans.`,
-      'Same amount removed from each side → it stays fair, so the scale stays balanced.');
+      'Same amount removed from each side → it stays fair, so the scale stays level.');
   refresh();
 }
 
-function sendAcross(term, side) {
-  if (state[side].length <= 1) return;
-  const before = (term.c < 0 ? '−' : '+') + EQ.body(term);
+// Move a block onto a pan. If it crosses to the other pan, weight really
+// moves there (no sign trick) — so the scale leans that way.
+function moveToPan(term, side, target) {
+  if (target === side) { refresh(); return; }   // dropped back on its own pan
   state[side] = state[side].filter(t => t.id !== term.id);
-  term.c = -term.c;
-  state[EQ.other(side)].push(term);
-  const after = (term.c < 0 ? '−' : '+') + EQ.body(term);
+  state[target].push(term);
   selId = null;
-  say(`↔️ Moved <b>${EQ.body(term)}</b> across the =. It changed from <b>${before}</b> to <b>${after}</b>.`,
-      'Moving to the other side flips + and −. (It is the same as doing the opposite to both sides.)');
+  say(`✋ Moved <b>${EQ.body(term)}</b> onto the ${target === 'L' ? 'left' : 'right'} pan.`,
+      'That pan got heavier and the other got lighter — moving weight to one side tips the scale. To stay fair, change both pans the same way.');
   refresh();
 }
 
@@ -182,26 +197,11 @@ function combineNumbers(side) {
   refresh();
 }
 
-function flipBoth() {
-  ['L', 'R'].forEach(s => state[s].forEach(t => { t.c = -t.c; }));
-  selId = null;
-  say('± Flipped + and − on <b>both</b> sides at once — still fair.');
-  refresh();
-}
-
-/* the teaching moment the whole tool is built around */
-function whyBoth() {
-  say('👀 Watch what happens if we take it off only ONE pan…');
-  Scale.demoTilt(11, 1500, () => {
-    say('See? One pan got lighter and the scale <b>tipped over</b> — not fair anymore!',
-        'That is why we always take the same amount off BOTH sides. Then it stays balanced.');
-  });
-}
-
 /* ---------- win ---------- */
 function checkWin() {
   const w = EQ.win(state);
   if (!w) return false;
+  if (Math.abs(weightDiff()) > 1e-9) return false;   // only a win when level
   solved = true;
   const N = w.x;
   const lv = sideValue(currentDef.L, N);
@@ -218,9 +218,20 @@ function sideValue(defSide, x) {
 
 /* ---------- render cycle ---------- */
 function setBadge() {
-  if (solved) { badge.textContent = '🎉 Solved!'; badge.classList.remove('tipped'); return; }
-  badge.textContent = '⚖️ Balanced — both sides are equal';
-  badge.classList.remove('tipped');
+  if (solved) {
+    badge.textContent = '🎉 Solved!';
+    badge.classList.remove('tipped');
+    return;
+  }
+  const diff = weightDiff();              // right − left
+  if (Math.abs(diff) < 1e-9) {
+    badge.textContent = '⚖️ Balanced — both pans weigh the same';
+    badge.classList.remove('tipped');
+  } else {
+    const heavy = diff > 0 ? 'right' : 'left';
+    badge.textContent = `↕️ Not balanced — the ${heavy} pan is heavier`;
+    badge.classList.add('tipped');
+  }
 }
 function refresh() {
   renderEquationBar();
@@ -228,13 +239,6 @@ function refresh() {
   setBadge();
   if (!solved) checkWin();
   buildActions();
-}
-
-/* dropping a block somewhere it cannot legally go */
-function springBackLesson(term) {
-  say(`🙅 If you take <b>${EQ.body(term)}</b> off only ONE side, the scale tips — that is not fair!`,
-      'To keep it balanced, take the SAME amount off BOTH sides.');
-  refresh();   // the block springs back to its pan and the beam settles level
 }
 
 function selectTerm(id) {
@@ -269,21 +273,19 @@ function boot() {
     Scale.position(Scale.angleFor(weightDiff(id, side)));
   };
 
-  // where the block was dropped
+  // where the block was dropped — a real balance: the block STAYS there.
   Scale.onDrop = (id, target) => {
     if (solved) { refresh(); return; }
     const side = sideOf(id);
     const term = (state.L.concat(state.R)).find(t => t.id === id);
     if (!term || !side) { refresh(); return; }
 
-    if (target === EQ.other(side) && state[side].length > 1) {
-      sendAcross(term, side);                 // carried across the =
-    } else if (target === 'remove') {
-      const twin = EQ.twin(state, term, side);
-      if (twin) removeBoth(term, side);       // had a matching twin -> fair
-      else springBackLesson(term);            // one-sided -> tips, springs back
+    if (target === 'remove') {
+      takeOff(term, side);                    // lift it off the scale entirely
+    } else if (target === 'L' || target === 'R') {
+      moveToPan(term, side, target);          // drop it on a pan (maybe the other)
     } else {
-      refresh();                              // returned to its pan
+      refresh();                              // dropped in empty space -> snap home
     }
   };
 

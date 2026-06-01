@@ -9,15 +9,20 @@ Open `index.html` in any browser, or play the hosted version.
 
 ## The idea
 
-An equation is a balance scale. The `=` means the two pans weigh the same.
+An equation is a **real balance scale**. The `=` means the two pans weigh the
+same. The blocks are weights — drop them and they stay put, and the heavier pan
+sinks.
 
-- **Take off both sides** — remove an equal amount from each pan and it stays
-  balanced. (Tap "Why both?" to *see* the scale tip when you cheat and only
-  take from one side.)
-- **Send across the =** — move a piece to the other pan and its `+`/`−` flips.
-- **Add the numbers** — tidy up a pan by adding its numbers together.
+- **Drag a block to the 🗑️ tray** to lift it off the scale. Take a block off
+  ONE pan and that pan gets lighter, so the scale **tips** (the relation in the
+  equation bar becomes `<` or `>`). Take the matching block off the OTHER pan and
+  it **balances again** — that is the whole lesson: *do the same to both sides.*
+- **Drag a block to the other pan** — the weight really moves, so the scale leans
+  that way (it does **not** keep the equation true; you feel that it is unfair).
+- **➕ Add the numbers** — tidy up a pan by adding its numbers together.
 
-Keep going until you reach `x = ?`.
+Every puzzle is solved by removing matched pairs from both pans until only `x`
+is left — then the scale shows what `x` weighs and you win.
 
 ## Files
 
